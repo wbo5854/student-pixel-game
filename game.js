@@ -9,6 +9,8 @@ const ui = {
   message: document.querySelector("#message"),
   skillPanel: document.querySelector("#skillPanel"),
   skillChoices: document.querySelector("#skillChoices"),
+  characterPanel: document.querySelector("#characterPanel"),
+  characterChoices: document.querySelector("#characterChoices"),
   devourOverlay: document.querySelector("#devourOverlay"),
   devourText: document.querySelector("#devourText"),
   devourRestart: document.querySelector("#devourRestart"),
@@ -48,6 +50,29 @@ const skillCatalog = [
   { key: "coinBonus", name: "双倍美刀", desc: "同一张钞票算两次，经济学沉默了，但分数很开心。", input: "捡美刀时自动生效。", demo: "demo-bonus" },
   { key: "extraLife", name: "便当回血", desc: "吃完便当原地续命。胃说可以，命运说先观察一下。", input: "选择后立即生效。", demo: "demo-life" },
 ];
+const characterCatalog = [
+  {
+    key: "prison",
+    name: "「刚出狱」·魏",
+    texture: "playerHeadPrison",
+    image: "assets/player-head-pixel.png",
+    desc: "基础款魏，眼神里写着刚回归社会。",
+  },
+  {
+    key: "gay",
+    name: "「GAY」·魏",
+    texture: "playerHeadGay",
+    image: "assets/player-head-gay-pixel.png",
+    desc: "手持神秘字条，出场自带迷惑加成。",
+  },
+  {
+    key: "youth",
+    name: "「青年」·魏",
+    texture: "playerHeadYouth",
+    image: "assets/player-head-youth-pixel.png",
+    desc: "青年形态，精神状态看起来比较能打。",
+  },
+];
 
 let player;
 let aura;
@@ -82,6 +107,7 @@ let victoryRestartHandler = null;
 let failRestartHandler = null;
 let lastTrailAt = 0;
 let victoryHopping = false;
+let currentCharacter = characterCatalog[0];
 const touchState = {
   left: false,
   right: false,
@@ -120,21 +146,29 @@ new Phaser.Game(config);
 setupTouchControls();
 
 function preload() {
-  this.load.image("playerHead", "assets/player-head-pixel.png");
+  this.load.image("playerHeadPrison", "assets/player-head-pixel.png");
+  this.load.image("playerHeadGay", "assets/player-head-gay-pixel.png");
+  this.load.image("playerHeadYouth", "assets/player-head-youth-pixel.png");
   this.load.image("monsterMouth", "assets/monster-mouth-pixel.png");
   this.load.image("dogeBg", "assets/doge-bg.png");
 }
 
 function create() {
   sceneRef = this;
+  makeTextures(this);
+  showCharacterSelect(this);
+}
+
+function startGame(scene, character) {
+  currentCharacter = character;
   score = 0;
   lives = 3;
   currentLevel = 1;
   skillPoints = 0;
   attemptsLeft = 2;
   resetSkills();
-  makeTextures(this);
-  setupLevel(this, "第一关：现在只能普通跳跃。");
+  hideCharacterSelect();
+  setupLevel(scene, "第一关：现在只能普通跳跃。");
 }
 
 function setupLevel(scene, message) {
@@ -172,7 +206,7 @@ function setupLevel(scene, message) {
   leftLeg = scene.add.image(120, 500, "leg").setDepth(3.8);
   rightLeg = scene.add.image(120, 500, "leg").setDepth(3.8);
   player = scene.physics.add.sprite(120, 500, "miniBody").setDepth(4);
-  avatarHead = scene.add.image(120, 500, "playerHead").setDepth(5);
+  avatarHead = scene.add.image(120, 500, currentCharacter.texture).setDepth(5);
   avatarHead.setDisplaySize(44, 44);
   player.setCollideWorldBounds(true);
   player.setSize(28, 54).setOffset(10, 10);
@@ -580,6 +614,31 @@ function setMessage(text) {
   ui.message.textContent = text;
 }
 
+function showCharacterSelect(scene) {
+  ui.characterChoices.innerHTML = "";
+  characterCatalog.forEach((character) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.innerHTML = `
+      <i class="character-portrait" aria-hidden="true">
+        <img src="${character.image}" alt="" />
+      </i>
+      <strong>${character.name}</strong>
+      <span>${character.desc}</span>
+    `;
+    button.addEventListener("click", () => startGame(scene, character));
+    ui.characterChoices.appendChild(button);
+  });
+  ui.characterPanel.hidden = false;
+  setMessage("请选择人物。");
+  syncUi();
+}
+
+function hideCharacterSelect() {
+  if (!ui.characterPanel) return;
+  ui.characterPanel.hidden = true;
+}
+
 function updateMiniPerson(time, moving) {
   const direction = player.flipX ? -1 : 1;
   const pace = moving && player.body.blocked.down ? Math.sin(time / 80) : 0;
@@ -596,7 +655,7 @@ function updateMiniPerson(time, moving) {
 function addPlayerTrail(time) {
   const directionOffset = player.flipX ? 12 : -12;
   const bodyTrail = sceneRef.add.sprite(player.x + directionOffset, player.y, "miniBody").setDepth(2.6);
-  const headTrail = sceneRef.add.image(avatarHead.x + directionOffset, avatarHead.y, "playerHead").setDepth(2.7);
+  const headTrail = sceneRef.add.image(avatarHead.x + directionOffset, avatarHead.y, currentCharacter.texture).setDepth(2.7);
   bodyTrail.setFlipX(player.flipX).setAlpha(0.24).setTint(0x92a8ff);
   headTrail.setFlipX(avatarHead.flipX).setAlpha(0.22).setTint(0x92a8ff).setDisplaySize(44, 44);
   bodyTrail.setScale(player.scaleX, player.scaleY);

@@ -120,6 +120,101 @@ body {
   display: none;
 }
 
+.character-panel {
+  position: absolute;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background:
+    radial-gradient(circle at 50% 25%, rgba(216, 182, 95, 0.18), transparent 24rem),
+    rgba(5, 7, 12, 0.86);
+}
+
+.character-panel[hidden] {
+  display: none;
+}
+
+.character-dialog {
+  width: min(54rem, 100%);
+  padding: 1.1rem;
+  border: 4px solid #d8b65f;
+  background: #111622;
+  box-shadow: 8px 8px 0 #05070d, inset 0 0 0 3px #2d3448;
+}
+
+.character-dialog h1 {
+  margin: 0 0 0.95rem;
+  color: #fff8de;
+  font-size: 1.85rem;
+  line-height: 1.08;
+  text-shadow: 3px 3px 0 #05070d;
+}
+
+.character-choices {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.character-choices button {
+  min-height: 14rem;
+  padding: 0.9rem;
+  border: 3px solid #5b6178;
+  border-radius: 0;
+  background: #20283a;
+  color: #ffffff;
+  box-shadow: 4px 4px 0 #070911;
+  font: inherit;
+  text-align: center;
+  cursor: pointer;
+}
+
+.character-choices button:hover,
+.character-choices button:focus-visible {
+  border-color: #ffcc66;
+  background:
+    radial-gradient(circle at 50% 10%, rgba(255, 204, 102, 0.16), transparent 8rem),
+    #263149;
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 #070911;
+  outline: none;
+}
+
+.character-portrait {
+  display: grid;
+  place-items: center;
+  width: 6rem;
+  height: 6rem;
+  margin: 0 auto 0.85rem;
+  border: 4px solid #d8b65f;
+  background: #0b101b;
+  box-shadow: 4px 4px 0 #05070d;
+}
+
+.character-portrait img {
+  width: 4.5rem;
+  height: 4.5rem;
+  image-rendering: pixelated;
+}
+
+.character-choices strong {
+  display: block;
+  color: #ffcc66;
+  font-size: 1.05rem;
+  line-height: 1.25;
+  text-shadow: 2px 2px 0 #05070d;
+}
+
+.character-choices span {
+  display: block;
+  margin-top: 0.45rem;
+  color: #d7deea;
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
 .devour-overlay {
   position: absolute;
   inset: 0;
@@ -489,6 +584,10 @@ body {
   }
 
   .skill-choices {
+    grid-template-columns: 1fr;
+  }
+
+  .character-choices {
     grid-template-columns: 1fr;
   }
 
