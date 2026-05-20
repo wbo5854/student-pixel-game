@@ -285,16 +285,24 @@ function update(time) {
     if (enemy.body.blocked.right) enemy.moveDirection = -1;
     if (currentLevel >= 5) updateSmartEnemy(enemy);
     const direction = enemy.moveDirection || 1;
-    enemy.setVelocityX(direction * (155 + currentLevel * 18));
     if (enemy.body.blocked.down && !hasGroundAhead(enemy, direction)) {
-      enemy.x += direction * 6;
-      enemy.setVelocityY(80);
+      enemy.moveDirection = -direction;
+      enemy.x -= direction * 14;
+      enemy.setVelocityX(enemy.moveDirection * (180 + currentLevel * 24));
+      return;
     }
+    enemy.setVelocityX(direction * (180 + currentLevel * 24));
     if (enemy.body.blocked.down && sceneRef.time.now > enemy.nextJumpAt) {
-      enemy.setVelocityY(-360 - currentLevel * 8);
-      enemy.nextJumpAt = sceneRef.time.now + Phaser.Math.Between(1300, 2800);
+      const towardPlayer = player && Math.abs(player.x - enemy.x) < 430 ? Math.sign(player.x - enemy.x) || direction : direction;
+      if (currentLevel >= 4) enemy.moveDirection = towardPlayer;
+      enemy.setVelocityY(-380 - currentLevel * 14);
+      enemy.nextJumpAt = sceneRef.time.now + Phaser.Math.Between(950, 2100);
     }
-    if (enemy.y > WORLD_HEIGHT + 80) enemy.disableBody(true, true);
+    if (enemy.y > WORLD_HEIGHT + 80) {
+      enemy.setPosition(Math.max(160, enemy.spawnX || 900), 520);
+      enemy.setVelocity(0, -260);
+      enemy.moveDirection *= -1;
+    }
   });
 }
 
@@ -337,8 +345,9 @@ function buildLevel(scene, level) {
     const x = 18 + index * 12 + (level % 3);
     const enemy = enemies.create(x * TILE, 575, "monsterMouth");
     enemy.setDisplaySize(74, 74);
+    enemy.spawnX = x * TILE;
     enemy.moveDirection = index % 2 === 0 ? -1 : 1;
-    enemy.setVelocityX(enemy.moveDirection * (155 + level * 18));
+    enemy.setVelocityX(enemy.moveDirection * (180 + level * 24));
     enemy.setSize(50, 44).setOffset(23, 30);
     enemy.nextJumpAt = scene.time.now + 900 + index * 450 + Phaser.Math.Between(0, 900);
     enemy.nextAttackAt = scene.time.now + 1200 + index * 500 + Phaser.Math.Between(0, 1000);
@@ -417,12 +426,12 @@ function loseLife(scene, resetPosition, reason = "hit") {
   lives -= 1;
   attemptsLeft -= 1;
   syncUi();
-  if (attemptsLeft <= 0) {
-    showFailOverlay(scene);
-    return;
-  }
   if (reason === "devoured") {
     showDevourOverlay(scene, lives <= 0);
+    return;
+  }
+  if (attemptsLeft <= 0) {
+    showFailOverlay(scene);
     return;
   }
 
@@ -761,8 +770,8 @@ function pullNearbyCoins() {
 }
 
 function hasGroundAhead(enemy, direction) {
-  const probeX = enemy.x + direction * 42;
-  const probeY = enemy.y + 44;
+  const probeX = enemy.x + direction * 54;
+  const probeY = enemy.y + 50;
   let found = false;
   platforms.children.iterate((platform) => {
     if (found || !platform || !platform.body) return;
@@ -784,22 +793,23 @@ function updateSmartEnemy(enemy) {
   const dx = player.x - enemy.x;
   const dy = player.y - enemy.y;
   const distance = Math.abs(dx);
-  if (distance < 520) {
+  const sameVerticalBand = Math.abs(dy) < 220;
+  if (distance < 720 && sameVerticalBand) {
     enemy.moveDirection = dx < 0 ? -1 : 1;
   }
 
   const canPounce =
     enemy.body.blocked.down &&
-    distance > 70 &&
-    distance < 360 &&
-    Math.abs(dy) < 150 &&
+    distance > 55 &&
+    distance < 470 &&
+    Math.abs(dy) < 190 &&
     sceneRef.time.now > enemy.nextAttackAt;
 
   if (canPounce) {
     enemy.moveDirection = dx < 0 ? -1 : 1;
-    enemy.setVelocity(enemy.moveDirection * (260 + currentLevel * 20), -500 - currentLevel * 10);
-    enemy.nextAttackAt = sceneRef.time.now + Phaser.Math.Between(1700, 3200);
-    enemy.nextJumpAt = sceneRef.time.now + 1200;
+    enemy.setVelocity(enemy.moveDirection * (340 + currentLevel * 34), -530 - currentLevel * 18);
+    enemy.nextAttackAt = sceneRef.time.now + Phaser.Math.Between(1050, 2300);
+    enemy.nextJumpAt = sceneRef.time.now + 850;
     setMessage("五关后的小怪开始带脑子了。");
   }
 }
