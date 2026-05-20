@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>学生闯关</title>
+    <link rel="stylesheet" href="./styles.css" />
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.90.0/dist/phaser.min.js"></script>
+  </head>
+  <body>
+    <main class="shell" aria-label="学生闯关游戏">
+      <div id="game"></div>
+      <aside class="hud" aria-label="游戏状态">
+        <strong id="levelText">1-1</strong>
+        <span>技能点 <b id="skillPointText">0</b></span>
+        <span>美刀 <b id="coinText">0</b></span>
+        <span>体力 <b id="lifeText">3</b></span>
+        <span>机会 <b id="attemptText">2</b></span>
+        <span>时间 <b id="timeText">90</b></span>
+        <span id="skillText">技能：普通跳跃</span>
+      </aside>
+      <p id="message" class="message">准备</p>
+      <nav class="touch-controls" aria-label="触屏操作">
+        <div class="touch-move">
+          <button id="touchLeft" type="button" aria-label="向左移动">←</button>
+          <button id="touchRight" type="button" aria-label="向右移动">→</button>
+        </div>
+        <div class="touch-actions">
+          <button id="touchJump" type="button" aria-label="跳跃">↑</button>
+          <button id="touchDash" type="button" aria-label="技能">✦</button>
+        </div>
+      </nav>
+      <section id="skillPanel" class="skill-panel" hidden aria-label="选择技能">
+        <div class="skill-dialog">
+          <p class="eyebrow">获得技能点</p>
+          <h1>选择一个技能</h1>
+          <div id="skillChoices" class="skill-choices"></div>
+        </div>
+      </section>
+      <section id="devourOverlay" class="devour-overlay" hidden aria-label="被吞噬">
+        <div class="devour-dialog">
+          <p class="devour-kicker">查查出现了</p>
+          <h1 id="devourTitle">你被查查吃掉了</h1>
+          <p id="devourText">周围一片血红，书包没能保住你。</p>
+          <button id="devourRestart" type="button">重新开始</button>
+        </div>
+      </section>
+      <section id="victoryOverlay" class="victory-overlay" hidden aria-label="通关">
+        <div class="victory-dialog">
+          <p class="eyebrow">通关完成</p>
+          <img src="assets/victory-photo.jpg" alt="通关照片" />
+          <h1>你真棒呢</h1>
+          <button id="victoryRestart" type="button">再来一次</button>
+        </div>
+      </section>
+      <section id="failOverlay" class="victory-overlay" hidden aria-label="失败">
+        <div class="victory-dialog">
+          <p class="eyebrow">回到第一关</p>
+          <img src="assets/fail-photo.jpg" alt="失败照片" />
+          <h1>菜就多练</h1>
+          <button id="failRestart" type="button">从第一关开始</button>
+        </div>
+      </section>
+    </main>
+    <script src="./game.js"></script>
+  </body>
+</html>
