@@ -129,6 +129,7 @@ let currentCharacter = characterCatalog[0];
 let healthUpgrades = 0;
 let lastDeathReason = "操作把自己送走了。";
 let lastFallSpeed = 0;
+let previousFallSpeed = 0;
 const touchState = {
   left: false,
   right: false,
@@ -204,6 +205,7 @@ function setupLevel(scene, message) {
   invulnerableUntil = 0;
   jumpsUsed = 0;
   airDashUsed = false;
+  previousFallSpeed = 0;
   shieldReady = skills.shield;
   if (attemptsLeft > 0) shieldReady = true;
   secondsLeft = Math.max(76, 108 - currentLevel * 3);
@@ -271,8 +273,6 @@ function setupLevel(scene, message) {
 
 function update(time) {
   if (!player || gameOver || choosingSkill) return;
-  const wasOnGround = player.body.blocked.down;
-  const fallSpeedBeforePhysics = player.body.velocity.y;
 
   const left = cursors.left.isDown || keys.A.isDown || touchState.left;
   const right = cursors.right.isDown || keys.D.isDown || touchState.right;
@@ -299,8 +299,9 @@ function update(time) {
   }
 
   if (player.body.blocked.down) {
-    if (!wasOnGround && fallSpeedBeforePhysics > 760) {
-      lastFallSpeed = Math.round(fallSpeedBeforePhysics);
+    if (previousFallSpeed > 760) {
+      lastFallSpeed = Math.round(previousFallSpeed);
+      previousFallSpeed = 0;
       loseLife(sceneRef, false, "hardLanding");
     }
     jumpsUsed = 0;
@@ -342,13 +343,9 @@ function update(time) {
   rightArm.setAlpha(blinkAlpha);
   leftLeg.setAlpha(blinkAlpha);
   rightLeg.setAlpha(blinkAlpha);
-  avatarHead.setAlpha(blinkAlpha);
-  leftArm.setAlpha(blinkAlpha);
-  rightArm.setAlpha(blinkAlpha);
-  leftLeg.setAlpha(blinkAlpha);
-  rightLeg.setAlpha(blinkAlpha);
 
   if (player.y > 650) loseLife(sceneRef, true, "fall");
+  previousFallSpeed = player.body.blocked.down ? 0 : Math.max(0, player.body.velocity.y);
   updateFallingHazards();
 
   enemies.children.iterate((enemy) => {
