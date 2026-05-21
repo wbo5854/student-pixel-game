@@ -17,6 +17,7 @@ const ui = {
   victoryOverlay: document.querySelector("#victoryOverlay"),
   victoryRestart: document.querySelector("#victoryRestart"),
   failOverlay: document.querySelector("#failOverlay"),
+  failReason: document.querySelector("#failReason"),
   failRestart: document.querySelector("#failRestart"),
   touchLeft: document.querySelector("#touchLeft"),
   touchRight: document.querySelector("#touchRight"),
@@ -28,6 +29,8 @@ const TILE = 48;
 const WORLD_WIDTH = 4600;
 const WORLD_HEIGHT = 720;
 const MAX_LEVEL = 5;
+const START_HEALTH = 100;
+const MAX_HEALTH_UPGRADES = 2;
 const skills = {
   doubleJump: false,
   sprint: false,
@@ -38,39 +41,52 @@ const skills = {
   slowFall: false,
   coinBonus: false,
   extraLife: false,
+  trapGuard: false,
 };
 const skillCatalog = [
-  { key: "doubleJump", name: "二段跳", desc: "发动gay之力，空气都不好意思让你掉下去，于是给你垫了一脚。", input: "空中再按一次跳跃。", demo: "demo-double" },
-  { key: "sprint", name: "放学冲刺", desc: "像听见班主任说“留一下”那一刻，身体比脑子先逃走。", input: "移动时按住 Shift 或 ✦。", demo: "demo-sprint" },
-  { key: "highJump", name: "跳高课代表", desc: "把作业没写完的恐惧灌进膝盖里，起跳高度立刻合理化。", input: "在地面按跳跃。", demo: "demo-high" },
-  { key: "airDash", name: "空中急转", desc: "半空中突然想起人生不能这样，于是强行横向改命。", input: "空中按 Shift 或 ✦。", demo: "demo-dash" },
-  { key: "shield", name: "硬壳书包", desc: "书包替你挨一下。知识没装多少，抗揍倒是很专业。", input: "被敌人碰到时自动触发。", demo: "demo-shield" },
-  { key: "magnet", name: "美刀吸引", desc: "贫穷产生引力，附近美刀会主动靠近你，场面十分现实。", input: "靠近美刀时自动触发。", demo: "demo-magnet" },
-  { key: "slowFall", name: "轻飘落地", desc: "下坠速度变慢，像ddl前的时间一样，看似还有，其实没有。", input: "下落时按住跳跃。", demo: "demo-float" },
-  { key: "coinBonus", name: "双倍美刀", desc: "同一张钞票算两次，经济学沉默了，但分数很开心。", input: "捡美刀时自动生效。", demo: "demo-bonus" },
-  { key: "extraLife", name: "便当回血", desc: "吃完便当原地续命。胃说可以，命运说先观察一下。", input: "选择后立即生效。", demo: "demo-life" },
+  { key: "doubleJump", name: "二段跳", cost: 65, desc: "发动gay之力，空气都不好意思让你掉下去，于是给你垫了一脚。", input: "空中再按一次跳跃。", demo: "demo-double" },
+  { key: "sprint", name: "放学冲刺", cost: 14, desc: "像听见班主任说“留一下”那一刻，身体比脑子先逃走。", input: "移动时按住 Shift 或 ✦。", demo: "demo-sprint" },
+  { key: "highJump", name: "跳高课代表", cost: 18, desc: "把作业没写完的恐惧灌进膝盖里，起跳高度立刻合理化。", input: "在地面按跳跃。", demo: "demo-high" },
+  { key: "airDash", name: "空中急转", cost: 22, desc: "半空中突然想起人生不能这样，于是强行横向改命。", input: "空中按 Shift 或 ✦。", demo: "demo-dash" },
+  { key: "shield", name: "硬壳书包", cost: 16, desc: "书包替你挨一下。知识没装多少，抗揍倒是很专业。", input: "被敌人碰到时自动触发。", demo: "demo-shield" },
+  { key: "magnet", name: "美刀吸引", cost: 24, desc: "贫穷产生引力，附近美刀会主动靠近你，场面十分现实。", input: "靠近美刀时自动触发。", demo: "demo-magnet" },
+  { key: "slowFall", name: "轻飘落地", cost: 12, desc: "下坠速度变慢，像ddl前的时间一样，看似还有，其实没有。", input: "下落时按住跳跃。", demo: "demo-float" },
+  { key: "coinBonus", name: "双倍美刀", cost: 28, desc: "同一张钞票算两次，经济学沉默了，但分数很开心。", input: "捡美刀时自动生效。", demo: "demo-bonus" },
+  { key: "trapGuard", name: "防坑保险", cost: 30, desc: "买完以后陷阱少咬你一口。保险公司听了都想报警。", input: "受到陷阱伤害时自动减伤。", demo: "demo-shield" },
+  { key: "healPack", name: "回血便当", cost: 16, desc: "吃完回血 35。味道一般，但命比较重要。", input: "购买后立即回血。", demo: "demo-life", type: "heal" },
+  { key: "shieldCharge", name: "一次性护盾", cost: 22, desc: "临时护盾 +1。书包突然想起自己是防具。", input: "购买后获得 1 层护盾。", demo: "demo-shield", type: "shieldCharge" },
+  { key: "maxHealth", name: "血条扩建", cost: 38, desc: "血量上限 +25。身体没变强，只是结算方式变宽容了。", input: "最多购买两次。", demo: "demo-life", type: "maxHealth" },
 ];
 const characterCatalog = [
   {
     key: "prison",
     name: "「刚出狱」·魏",
     texture: "playerHeadPrison",
+    bodyTexture: "miniBodyPrison",
+    limbTexture: "limbPrison",
+    legTexture: "legPrison",
     image: "assets/player-head-pixel.png",
-    desc: "基础款魏，眼神里写着刚回归社会。",
+    desc: "灰黑囚服风，眼神里写着刚回归社会。",
   },
   {
     key: "gay",
     name: "「GAY」·魏",
     texture: "playerHeadGay",
+    bodyTexture: "miniBodyGay",
+    limbTexture: "limbGay",
+    legTexture: "legGay",
     image: "assets/player-head-gay-pixel.png",
-    desc: "手持神秘字条，出场自带迷惑加成。",
+    desc: "彩虹纸牌风，出场自带闪亮迷惑加成。",
   },
   {
     key: "youth",
     name: "「青年」·魏",
     texture: "playerHeadYouth",
+    bodyTexture: "miniBodyYouth",
+    limbTexture: "limbYouth",
+    legTexture: "legYouth",
     image: "assets/player-head-youth-pixel.png",
-    desc: "青年形态，精神状态看起来比较能打。",
+    desc: "蓝白学生风，精神状态看起来比较能打。",
   },
 ];
 
@@ -87,13 +103,15 @@ let platforms;
 let hazards;
 let coins;
 let enemies;
+let fallingHazards;
 let flag;
 let score = 0;
-let lives = 3;
+let lives = START_HEALTH;
+let maxHealth = START_HEALTH;
 let secondsLeft = 90;
 let currentLevel = 1;
 let skillPoints = 0;
-let attemptsLeft = 2;
+let attemptsLeft = 0;
 let gameOver = false;
 let choosingSkill = false;
 let invulnerableUntil = 0;
@@ -108,6 +126,9 @@ let failRestartHandler = null;
 let lastTrailAt = 0;
 let victoryHopping = false;
 let currentCharacter = characterCatalog[0];
+let healthUpgrades = 0;
+let lastDeathReason = "操作把自己送走了。";
+let lastFallSpeed = 0;
 const touchState = {
   left: false,
   right: false,
@@ -162,10 +183,12 @@ function create() {
 function startGame(scene, character) {
   currentCharacter = character;
   score = 0;
-  lives = 3;
+  maxHealth = START_HEALTH;
+  lives = maxHealth;
   currentLevel = 1;
   skillPoints = 0;
-  attemptsLeft = 2;
+  attemptsLeft = 0;
+  healthUpgrades = 0;
   resetSkills();
   hideCharacterSelect();
   setupLevel(scene, "第一关：现在只能普通跳跃。");
@@ -182,6 +205,7 @@ function setupLevel(scene, message) {
   jumpsUsed = 0;
   airDashUsed = false;
   shieldReady = skills.shield;
+  if (attemptsLeft > 0) shieldReady = true;
   secondsLeft = Math.max(76, 108 - currentLevel * 3);
 
   if (timerEvent) timerEvent.remove(false);
@@ -197,15 +221,16 @@ function setupLevel(scene, message) {
   hazards = scene.physics.add.staticGroup();
   coins = scene.physics.add.staticGroup();
   enemies = scene.physics.add.group({ allowGravity: true, bounceX: 1 });
+  fallingHazards = scene.physics.add.group({ allowGravity: false, immovable: true });
 
   buildLevel(scene, currentLevel);
 
   aura = scene.add.sprite(120, 500, "foxAura").setDepth(3).setAlpha(0.86);
-  leftArm = scene.add.image(120, 500, "limb").setDepth(3.8);
-  rightArm = scene.add.image(120, 500, "limb").setDepth(3.8);
-  leftLeg = scene.add.image(120, 500, "leg").setDepth(3.8);
-  rightLeg = scene.add.image(120, 500, "leg").setDepth(3.8);
-  player = scene.physics.add.sprite(120, 500, "miniBody").setDepth(4);
+  leftArm = scene.add.image(120, 500, currentCharacter.limbTexture).setDepth(3.8);
+  rightArm = scene.add.image(120, 500, currentCharacter.limbTexture).setDepth(3.8);
+  leftLeg = scene.add.image(120, 500, currentCharacter.legTexture).setDepth(3.8);
+  rightLeg = scene.add.image(120, 500, currentCharacter.legTexture).setDepth(3.8);
+  player = scene.physics.add.sprite(120, 500, currentCharacter.bodyTexture).setDepth(4);
   avatarHead = scene.add.image(120, 500, currentCharacter.texture).setDepth(5);
   avatarHead.setDisplaySize(44, 44);
   player.setCollideWorldBounds(true);
@@ -217,6 +242,7 @@ function setupLevel(scene, message) {
   scene.physics.add.overlap(player, coins, collectCoin, null, scene);
   scene.physics.add.overlap(player, enemies, touchEnemy, null, scene);
   scene.physics.add.overlap(player, hazards, () => loseLife(scene, true, "trap"), null, scene);
+  scene.physics.add.overlap(player, fallingHazards, () => loseLife(scene, true, "falling"), null, scene);
   scene.physics.add.overlap(player, flag, winLevel, null, scene);
 
   cursors = scene.input.keyboard.createCursorKeys();
@@ -245,6 +271,8 @@ function setupLevel(scene, message) {
 
 function update(time) {
   if (!player || gameOver || choosingSkill) return;
+  const wasOnGround = player.body.blocked.down;
+  const fallSpeedBeforePhysics = player.body.velocity.y;
 
   const left = cursors.left.isDown || keys.A.isDown || touchState.left;
   const right = cursors.right.isDown || keys.D.isDown || touchState.right;
@@ -271,6 +299,10 @@ function update(time) {
   }
 
   if (player.body.blocked.down) {
+    if (!wasOnGround && fallSpeedBeforePhysics > 760) {
+      lastFallSpeed = Math.round(fallSpeedBeforePhysics);
+      loseLife(sceneRef, false, "hardLanding");
+    }
     jumpsUsed = 0;
     airDashUsed = false;
   }
@@ -310,8 +342,14 @@ function update(time) {
   rightArm.setAlpha(blinkAlpha);
   leftLeg.setAlpha(blinkAlpha);
   rightLeg.setAlpha(blinkAlpha);
+  avatarHead.setAlpha(blinkAlpha);
+  leftArm.setAlpha(blinkAlpha);
+  rightArm.setAlpha(blinkAlpha);
+  leftLeg.setAlpha(blinkAlpha);
+  rightLeg.setAlpha(blinkAlpha);
 
   if (player.y > 650) loseLife(sceneRef, true, "fall");
+  updateFallingHazards();
 
   enemies.children.iterate((enemy) => {
     if (!enemy || !enemy.active) return;
@@ -403,6 +441,11 @@ function buildLevel(scene, level) {
     spike.refreshBody();
   }
 
+  for (let i = 0; i < 2 + Math.floor(level / 2); i += 1) {
+    const x = (15 + i * 17 + level) * TILE;
+    addFallingHazard(scene, x, 92 + (i % 2) * 28);
+  }
+
   const goalX = 4340;
   flag = scene.physics.add.staticSprite(goalX, 554, "flag");
   flag.setSize(48, 160).setOffset(0, 0);
@@ -426,6 +469,27 @@ function addCoin(scene, x, y) {
   });
 }
 
+function addFallingHazard(scene, x, y) {
+  const hazard = fallingHazards.create(x, y, "fallingBlock");
+  hazard.spawnX = x;
+  hazard.spawnY = y;
+  hazard.isFalling = false;
+  hazard.setAlpha(0.18);
+  hazard.setSize(34, 34).setOffset(7, 7);
+  hazard.body.allowGravity = false;
+  hazard.setImmovable(true);
+  hazard.refreshBody();
+  scene.tweens.add({
+    targets: hazard,
+    y: y + 8,
+    duration: 780,
+    yoyo: true,
+    repeat: -1,
+    ease: "Stepped",
+    easeParams: [2],
+  });
+}
+
 function collectCoin(_player, coin) {
   coin.disableBody(true, true);
   score += skills.coinBonus ? 2 : 1;
@@ -446,32 +510,29 @@ function touchEnemy(scenePlayer, enemy) {
     setMessage("踩怪大跳板，直接弹上天。");
     return;
   }
-  loseLife(scene, false, "devoured");
+  loseLife(scene, false, "hit");
 }
 
 function loseLife(scene, resetPosition, reason = "hit") {
   if (scene.time.now < invulnerableUntil && !resetPosition) return;
-  if (shieldReady && !resetPosition) {
+  if ((shieldReady || attemptsLeft > 0) && !resetPosition) {
+    if (attemptsLeft > 0) attemptsLeft -= 1;
     shieldReady = false;
     invulnerableUntil = scene.time.now + 1400;
     setMessage("书包挡住了一次碰撞");
+    syncUi();
     return;
   }
-  lives -= 1;
-  attemptsLeft -= 1;
+  const damage = damageFor(reason);
+  lives = Math.max(0, lives - damage);
+  lastDeathReason = deathReasonText(reason, damage);
   syncUi();
   if (reason === "devoured") {
     showDevourOverlay(scene, lives <= 0);
     return;
   }
-  if (attemptsLeft <= 0) {
-    showFailOverlay(scene);
-    return;
-  }
-
   if (lives <= 0) {
-    lives = 3;
-    setupLevel(scene, `从第 ${currentLevel} 关重新开始`);
+    showFailOverlay(scene);
     return;
   }
 
@@ -479,10 +540,12 @@ function loseLife(scene, resetPosition, reason = "hit") {
     fall: "掉进坑里了",
     timeout: "拖到放学铃都响了",
     devoured: "被小怪张嘴吞了一口",
+    falling: "被天上掉下来的东西砸到了",
+    hardLanding: "从高处落地把腿震麻了",
     trap: "踩到危险物了",
     hit: "被撞到了",
   }[reason] || "失误了";
-  setMessage(`${reasonText}，剩余体力：${lives}`);
+  setMessage(`${reasonText}，扣 ${damage} 血，剩余血量：${lives}`);
   invulnerableUntil = scene.time.now + 1500;
   if (resetPosition) {
     player.setPosition(Math.max(120, player.x - 260), 500);
@@ -491,6 +554,32 @@ function loseLife(scene, resetPosition, reason = "hit") {
   } else {
     player.setVelocity(-180 * (player.flipX ? -1 : 1), -350);
   }
+}
+
+function damageFor(reason) {
+  const base = {
+    fall: 28,
+    timeout: 24,
+    devoured: 48,
+    falling: 34,
+    hardLanding: lastFallSpeed > 980 ? 36 : 22,
+    trap: 30,
+    hit: 50,
+  }[reason] || 20;
+  return skills.trapGuard && (reason === "trap" || reason === "falling") ? Math.ceil(base * 0.55) : base;
+}
+
+function deathReasonText(reason, damage) {
+  const text = {
+    fall: "掉进坑里，地心引力赢得很彻底。",
+    timeout: "拖到放学铃都响了，时间把你判了死刑。",
+    devoured: "被查查吞掉，书包和尊严一起消失。",
+    falling: "被天上突然掉下来的东西砸中，抬头已经来不及了。",
+    hardLanding: `从高处硬着陆，落地速度 ${lastFallSpeed || "过快"}，膝盖当场提出辞职。`,
+    trap: "踩到陷阱，脚底板替大脑做了错误决定。",
+    hit: "被小怪撞掉 50 血，说明近距离社交有风险。",
+  }[reason] || "操作失误，命运顺手补了一刀。";
+  return `${text} 本次扣血 ${damage}。`;
 }
 
 function winLevel(_player, levelFlag) {
@@ -507,12 +596,10 @@ function winLevel(_player, levelFlag) {
   if (currentLevel < MAX_LEVEL) {
     standBehindFlag(levelFlag.x);
     playVictoryHop(scene);
-    skillPoints += 1;
     currentLevel += 1;
-    attemptsLeft = 2;
     choosingSkill = true;
     syncUi();
-    setMessage("选择一个技能继续。");
+    setMessage("察察的神秘商店开门，用美刀换命运。");
     showSkillPanel(scene);
     return;
   }
@@ -576,7 +663,7 @@ function playVictoryHop(scene) {
 }
 
 function restartRun(scene) {
-  lives = 3;
+  if (lives <= 0) lives = maxHealth;
   victoryHopping = false;
   hideSkillPanel();
   setupLevel(scene, `重新开始第 ${currentLevel} 关`);
@@ -602,9 +689,9 @@ function endRun(scene, text) {
 
 function syncUi() {
   ui.level.textContent = `1-${currentLevel}`;
-  ui.skillPoints.textContent = skillPoints;
+  ui.skillPoints.textContent = learnedSkillCount();
   ui.coins.textContent = score;
-  ui.lives.textContent = lives;
+  ui.lives.textContent = `${lives}/${maxHealth}`;
   ui.attempts.textContent = attemptsLeft;
   ui.time.textContent = secondsLeft;
   ui.skill.textContent = `技能：${activeSkillLabel()}`;
@@ -654,7 +741,7 @@ function updateMiniPerson(time, moving) {
 
 function addPlayerTrail(time) {
   const directionOffset = player.flipX ? 12 : -12;
-  const bodyTrail = sceneRef.add.sprite(player.x + directionOffset, player.y, "miniBody").setDepth(2.6);
+  const bodyTrail = sceneRef.add.sprite(player.x + directionOffset, player.y, currentCharacter.bodyTexture).setDepth(2.6);
   const headTrail = sceneRef.add.image(avatarHead.x + directionOffset, avatarHead.y, currentCharacter.texture).setDepth(2.7);
   bodyTrail.setFlipX(player.flipX).setAlpha(0.24).setTint(0x92a8ff);
   headTrail.setFlipX(avatarHead.flipX).setAlpha(0.22).setTint(0x92a8ff).setDisplaySize(44, 44);
@@ -679,25 +766,49 @@ function resetSkills() {
   });
 }
 
+function learnedSkillCount() {
+  return Object.values(skills).filter(Boolean).length;
+}
+
 function showSkillPanel(scene) {
   if (timerEvent) timerEvent.paused = true;
   ui.skillChoices.innerHTML = "";
-  availableSkillChoices().forEach((skill) => {
+  skillCatalog.forEach((skill) => {
+    const owned = isShopItemOwned(skill);
+    const affordable = score >= skill.cost;
+    const canUse = canBuyShopItem(skill);
     const button = document.createElement("button");
     button.type = "button";
+    button.disabled = owned || !affordable || !canUse;
+    button.classList.toggle("is-owned", owned);
+    button.classList.toggle("is-locked", !owned && (!affordable || !canUse));
+    const status = shopItemStatus(skill, owned, affordable, canUse);
     button.innerHTML = `
       <div class="skill-demo ${skill.demo}" aria-hidden="true">
         <i class="demo-hero"></i>
         <i class="demo-coin"></i>
         <i class="demo-ghost"></i>
       </div>
-      <strong>${skill.name}</strong>
+      <strong>${skill.name}<em>${skill.cost} 美刀</em></strong>
       <span>${skill.desc}</span>
       <span>操作：${skill.input}</span>
+      <b>${status}</b>
     `;
-    button.addEventListener("click", () => chooseSkill(scene, skill));
+    if (!owned && affordable && canUse) {
+      button.addEventListener("click", () => chooseSkill(scene, skill));
+    }
     ui.skillChoices.appendChild(button);
   });
+  const skipButton = document.createElement("button");
+  skipButton.type = "button";
+  skipButton.className = "skill-skip";
+  skipButton.innerHTML = `
+    <strong>先不买</strong>
+    <span>把美刀攒起来，等下次商店再宰自己一刀。</span>
+    <b>存钱继续</b>
+  `;
+  skipButton.addEventListener("click", () => skipSkillShop(scene));
+  ui.skillChoices.appendChild(skipButton);
   ui.skillPanel.hidden = false;
 }
 
@@ -711,15 +822,23 @@ function showDevourOverlay(scene, outOfLives = false) {
   if (timerEvent) timerEvent.paused = true;
   player.setVelocity(0, 0);
   ui.devourText.textContent = outOfLives
-    ? "体力归零。周围一片血红，书包没能保住你。"
-    : `剩余体力：${lives}。周围一片血红，书包没能保住你。`;
+    ? "血量归零。周围一片血红，书包没能保住你。"
+    : `剩余血量：${lives}/${maxHealth}。周围一片血红，书包没能保住你。`;
   ui.devourOverlay.hidden = false;
   if (devourRestartHandler) {
     ui.devourRestart.removeEventListener("click", devourRestartHandler);
   }
   devourRestartHandler = () => {
     victoryHopping = false;
-    if (outOfLives) lives = 3;
+    if (outOfLives) {
+      currentLevel = 1;
+      score = 0;
+      maxHealth = START_HEALTH;
+      lives = maxHealth;
+      attemptsLeft = 0;
+      healthUpgrades = 0;
+      resetSkills();
+    }
     hideDevourOverlay();
     setupLevel(scene, `从第 ${currentLevel} 关重新开始`);
   };
@@ -745,8 +864,10 @@ function showVictoryOverlay(scene) {
     currentLevel = 1;
     skillPoints = 0;
     score = 0;
-    lives = 3;
-    attemptsLeft = 2;
+    maxHealth = START_HEALTH;
+    lives = maxHealth;
+    attemptsLeft = 0;
+    healthUpgrades = 0;
     resetSkills();
     setupLevel(scene, "第一关：现在只能普通跳跃。");
   };
@@ -758,13 +879,14 @@ function hideVictoryOverlay() {
   ui.victoryOverlay.hidden = true;
 }
 
-function showFailOverlay(scene) {
+function showFailOverlay(scene, reasonText = lastDeathReason) {
   gameOver = true;
   victoryHopping = false;
   if (timerEvent) timerEvent.paused = true;
   if (player?.body) player.body.enable = false;
   player?.setVelocity(0, 0);
-  setMessage("机会用完，回到第一关。");
+  setMessage("血量归零，回到第一关。");
+  if (ui.failReason) ui.failReason.textContent = `死因：${reasonText}`;
   ui.failOverlay.hidden = false;
   if (failRestartHandler) {
     ui.failRestart.removeEventListener("click", failRestartHandler);
@@ -774,8 +896,10 @@ function showFailOverlay(scene) {
     currentLevel = 1;
     skillPoints = 0;
     score = 0;
-    lives = 3;
-    attemptsLeft = 2;
+    maxHealth = START_HEALTH;
+    lives = maxHealth;
+    attemptsLeft = 0;
+    healthUpgrades = 0;
     resetSkills();
     setupLevel(scene, "第一关：现在只能普通跳跃。");
   };
@@ -787,20 +911,60 @@ function hideFailOverlay() {
   ui.failOverlay.hidden = true;
 }
 
-function availableSkillChoices() {
-  const locked = skillCatalog.filter((skill) => !skills[skill.key]);
-  return locked.slice(0, 3);
-}
-
 function chooseSkill(scene, skill) {
-  if (skillPoints <= 0 || skills[skill.key]) return;
+  if (isShopItemOwned(skill) || score < skill.cost || !canBuyShopItem(skill)) return;
   victoryHopping = false;
-  skills[skill.key] = true;
-  skillPoints -= 1;
-  if (skill.key === "extraLife") lives += 1;
+  score -= skill.cost;
+  applyShopItem(skill);
   hideSkillPanel();
   choosingSkill = false;
-  setupLevel(scene, `第 ${currentLevel} 关：已学会「${skill.name}」。`);
+  setupLevel(scene, `第 ${currentLevel} 关：察察卖给你「${skill.name}」。`);
+}
+
+function skipSkillShop(scene) {
+  victoryHopping = false;
+  hideSkillPanel();
+  choosingSkill = false;
+  setupLevel(scene, `第 ${currentLevel} 关：存钱也是一种技能。`);
+}
+
+function isShopItemOwned(item) {
+  if (item.type === "heal" || item.type === "shieldCharge") return false;
+  if (item.type === "maxHealth") return healthUpgrades >= MAX_HEALTH_UPGRADES;
+  return Boolean(skills[item.key]);
+}
+
+function canBuyShopItem(item) {
+  if (item.type === "heal") return lives < maxHealth;
+  if (item.type === "maxHealth") return healthUpgrades < MAX_HEALTH_UPGRADES;
+  return true;
+}
+
+function shopItemStatus(item, owned, affordable, canUse) {
+  if (owned) return "已拥有";
+  if (!canUse && item.type === "heal") return "血量已满";
+  if (!canUse && item.type === "maxHealth") return "扩建完毕";
+  if (!affordable) return `还差 ${item.cost - score} 美刀`;
+  return "可购买";
+}
+
+function applyShopItem(item) {
+  if (item.type === "heal") {
+    lives = Math.min(maxHealth, lives + 35);
+    return;
+  }
+  if (item.type === "shieldCharge") {
+    attemptsLeft += 1;
+    shieldReady = true;
+    return;
+  }
+  if (item.type === "maxHealth") {
+    healthUpgrades += 1;
+    maxHealth += 25;
+    lives = Math.min(maxHealth, lives + 25);
+    return;
+  }
+  skills[item.key] = true;
 }
 
 function activeSkillLabel() {
@@ -813,7 +977,7 @@ function activeSkillLabel() {
   if (skills.magnet) labels.push("美刀");
   if (skills.slowFall) labels.push("缓降");
   if (skills.coinBonus) labels.push("双倍分");
-  if (skills.extraLife) labels.push("+体力");
+  if (skills.trapGuard) labels.push("防坑");
   return labels.length ? labels.join(" / ") : "普通跳跃";
 }
 
@@ -825,6 +989,30 @@ function pullNearbyCoins() {
     coin.x += (player.x - coin.x) * 0.045;
     coin.y += (player.y - coin.y) * 0.045;
     coin.refreshBody();
+  });
+}
+
+function updateFallingHazards() {
+  if (!fallingHazards || !player) return;
+  fallingHazards.children.iterate((hazard) => {
+    if (!hazard || !hazard.active) return;
+    const nearPlayer = Math.abs(player.x - hazard.x) < 180 && player.y > hazard.y + 40;
+    if (!hazard.isFalling && nearPlayer) {
+      hazard.isFalling = true;
+      hazard.body.allowGravity = true;
+      hazard.setAlpha(1);
+      hazard.setVelocityY(520 + currentLevel * 70);
+      hazard.setAngularVelocity(Phaser.Math.Between(-360, 360));
+      setMessage("头顶突然掉东西了。");
+    }
+    if (hazard.y > 690) {
+      hazard.isFalling = false;
+      hazard.body.allowGravity = false;
+      hazard.setAngularVelocity(0);
+      hazard.setVelocity(0, 0);
+      hazard.setPosition(hazard.spawnX, hazard.spawnY);
+      hazard.setAlpha(0.18);
+    }
   });
 }
 
@@ -972,13 +1160,12 @@ function makeTextures(scene) {
   g.strokeLineShape(new Phaser.Geom.Line(40, 8, 8, 40));
   g.generateTexture("crate", 48, 48).clear();
 
-  g.fillStyle(0xf2f0e8).fillRoundedRect(5, 0, 10, 28, 4);
-  g.fillStyle(0xffd8a0).fillCircle(10, 4, 4);
-  g.generateTexture("limb", 20, 30).clear();
-
-  g.fillStyle(0x151b28).fillRoundedRect(5, 0, 10, 26, 4);
-  g.fillStyle(0x070a10).fillRect(3, 23, 15, 5);
-  g.generateTexture("leg", 20, 30).clear();
+  makeLimbTexture(g, "limbPrison", 0x3a3d46, 0xffd8a0);
+  makeLimbTexture(g, "limbGay", 0xff5fd7, 0xffd8a0);
+  makeLimbTexture(g, "limbYouth", 0xf2f0e8, 0xffd8a0);
+  makeLegTexture(g, "legPrison", 0x1b1d24, 0x070a10);
+  makeLegTexture(g, "legGay", 0x5b4cff, 0x11102a);
+  makeLegTexture(g, "legYouth", 0x151b28, 0x070a10);
 
   g.fillStyle(0x2f9c5a).fillRoundedRect(2, 7, 28, 18, 3);
   g.fillStyle(0xbaf0bb).fillRoundedRect(5, 10, 22, 12, 2);
@@ -991,6 +1178,14 @@ function makeTextures(scene) {
   g.fillStyle(0x202532).fillTriangle(0, 36, 24, 0, 48, 36);
   g.fillStyle(0xbec8c2).fillTriangle(8, 34, 24, 10, 40, 34);
   g.generateTexture("spike", 48, 40).clear();
+
+  g.fillStyle(0x6a5b47).fillRect(8, 8, 32, 32);
+  g.fillStyle(0xd8b65f).fillRect(13, 6, 22, 6);
+  g.fillStyle(0x33291f).fillRect(12, 20, 24, 8);
+  g.fillStyle(0xf1d37a).fillRect(17, 13, 5, 5);
+  g.fillStyle(0xf1d37a).fillRect(28, 13, 5, 5);
+  g.lineStyle(3, 0x17120d, 1).strokeRect(7, 7, 34, 34);
+  g.generateTexture("fallingBlock", 48, 48).clear();
 
   g.fillStyle(0x3f6f54).fillEllipse(24, 30, 44, 28);
   g.fillStyle(0x1f2c27).fillRect(8, 30, 32, 16);
@@ -1023,23 +1218,33 @@ function makeTextures(scene) {
   g.strokeCircle(24, 28, 21);
   g.generateTexture("foxNinja", 48, 62).clear();
 
-  g.fillStyle(0x2d5d9f).fillRoundedRect(7, 23, 11, 24, 4);
-  g.fillStyle(0xf2f0e8).fillRoundedRect(11, 22, 26, 27, 7);
-  g.fillStyle(0x25324a).fillRect(14, 25, 20, 7);
-  g.fillStyle(0xc94141).fillTriangle(20, 32, 28, 32, 24, 41);
-  g.lineStyle(5, 0xf2f0e8, 1);
-  g.strokeLineShape(new Phaser.Geom.Line(12, 27, 3, 42));
-  g.strokeLineShape(new Phaser.Geom.Line(36, 27, 45, 42));
-  g.lineStyle(5, 0x192131, 1);
-  g.strokeLineShape(new Phaser.Geom.Line(18, 47, 13, 60));
-  g.strokeLineShape(new Phaser.Geom.Line(30, 47, 35, 60));
-  g.fillStyle(0xffd8a0).fillCircle(3, 42, 4);
-  g.fillStyle(0xffd8a0).fillCircle(45, 42, 4);
-  g.fillStyle(0x0e141f).fillRect(9, 59, 12, 4);
-  g.fillStyle(0x0e141f).fillRect(31, 59, 12, 4);
-  g.lineStyle(2, 0xfff0a8, 0.85);
-  g.strokeRoundedRect(8, 20, 32, 31, 8);
-  g.generateTexture("miniBody", 48, 64).clear();
+  makeBodyTexture(g, "miniBodyPrison", {
+    backpack: 0x2f343c,
+    shirt: 0x3e424b,
+    collar: 0x151820,
+    tie: 0x8f2f2f,
+    accent: 0xc9c1a6,
+    line: 0x11141a,
+    badge: 0xd8b65f,
+  });
+  makeBodyTexture(g, "miniBodyGay", {
+    backpack: 0xff5fd7,
+    shirt: 0xfff1a8,
+    collar: 0x5b4cff,
+    tie: 0x27e0ff,
+    accent: 0xff5c5c,
+    line: 0x25123c,
+    badge: 0x73ff6a,
+  });
+  makeBodyTexture(g, "miniBodyYouth", {
+    backpack: 0x2d5d9f,
+    shirt: 0xf2f0e8,
+    collar: 0x25324a,
+    tie: 0xc94141,
+    accent: 0xfff0a8,
+    line: 0x192131,
+    badge: 0xfff0a8,
+  });
 
   g.fillStyle(0x463242).fillRect(8, 0, 8, 160);
   g.fillStyle(0xd8d1ba).fillTriangle(16, 0, 82, 34, 16, 68);
@@ -1049,4 +1254,37 @@ function makeTextures(scene) {
   g.fillStyle(0x24283a).fillRect(0, 0, 96, 48);
   g.fillStyle(0x6f5a7d).fillRect(0, 0, 96, 12);
   g.generateTexture("goalBase", 96, 48).clear();
+}
+
+function makeLimbTexture(g, key, sleeveColor, handColor) {
+  g.fillStyle(sleeveColor).fillRoundedRect(5, 0, 10, 28, 4);
+  g.fillStyle(handColor).fillCircle(10, 4, 4);
+  g.generateTexture(key, 20, 30).clear();
+}
+
+function makeLegTexture(g, key, pantsColor, shoeColor) {
+  g.fillStyle(pantsColor).fillRoundedRect(5, 0, 10, 26, 4);
+  g.fillStyle(shoeColor).fillRect(3, 23, 15, 5);
+  g.generateTexture(key, 20, 30).clear();
+}
+
+function makeBodyTexture(g, key, colors) {
+  g.fillStyle(colors.backpack).fillRoundedRect(7, 23, 11, 24, 4);
+  g.fillStyle(colors.shirt).fillRoundedRect(11, 22, 26, 27, 7);
+  g.fillStyle(colors.collar).fillRect(14, 25, 20, 7);
+  g.fillStyle(colors.tie).fillTriangle(20, 32, 28, 32, 24, 41);
+  g.fillStyle(colors.badge).fillRect(16, 36, 16, 4);
+  g.lineStyle(5, colors.shirt, 1);
+  g.strokeLineShape(new Phaser.Geom.Line(12, 27, 3, 42));
+  g.strokeLineShape(new Phaser.Geom.Line(36, 27, 45, 42));
+  g.lineStyle(5, colors.line, 1);
+  g.strokeLineShape(new Phaser.Geom.Line(18, 47, 13, 60));
+  g.strokeLineShape(new Phaser.Geom.Line(30, 47, 35, 60));
+  g.fillStyle(0xffd8a0).fillCircle(3, 42, 4);
+  g.fillStyle(0xffd8a0).fillCircle(45, 42, 4);
+  g.fillStyle(0x0e141f).fillRect(9, 59, 12, 4);
+  g.fillStyle(0x0e141f).fillRect(31, 59, 12, 4);
+  g.lineStyle(2, colors.accent, 0.9);
+  g.strokeRoundedRect(8, 20, 32, 31, 8);
+  g.generateTexture(key, 48, 64).clear();
 }

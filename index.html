@@ -12,10 +12,10 @@
       <div id="game"></div>
       <aside class="hud" aria-label="游戏状态">
         <strong id="levelText">1-1</strong>
-        <span>技能点 <b id="skillPointText">0</b></span>
+        <span>已购 <b id="skillPointText">0</b></span>
         <span>美刀 <b id="coinText">0</b></span>
-        <span>体力 <b id="lifeText">3</b></span>
-        <span>机会 <b id="attemptText">2</b></span>
+        <span>血量 <b id="lifeText">100</b></span>
+        <span>护盾 <b id="attemptText">0</b></span>
         <span>时间 <b id="timeText">90</b></span>
         <span id="skillText">技能：普通跳跃</span>
       </aside>
@@ -39,8 +39,8 @@
       </section>
       <section id="skillPanel" class="skill-panel" hidden aria-label="选择技能">
         <div class="skill-dialog">
-          <p class="eyebrow">获得技能点</p>
-          <h1>选择一个技能</h1>
+          <p class="eyebrow shop-title">察察的神秘商店</p>
+          <h1>用美刀换命运</h1>
           <div id="skillChoices" class="skill-choices"></div>
         </div>
       </section>
@@ -65,6 +65,7 @@
           <p class="eyebrow">回到第一关</p>
           <img src="assets/fail-photo.jpg" alt="失败照片" />
           <h1>菜就多练</h1>
+          <p id="failReason">死因：操作把自己送走了。</p>
           <button id="failRestart" type="button">从第一关开始</button>
         </div>
       </section>
